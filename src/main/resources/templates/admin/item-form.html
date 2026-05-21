@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::main-content})}"
+      lang="pt-BR">
+<head>
+    <title th:text="${editando} ? 'Editar Lote — Admin' : 'Novo Lote — Admin'">Lote</title>
+</head>
+<body>
+<th:block th:fragment="main-content">
+<div class="inner-content">
+
+    <!-- Breadcrumb -->
+    <p style="font-size:.85rem; color:var(--gray-400); margin-bottom:1.2rem;">
+        <a th:href="@{/admin}" style="color:var(--blue);text-decoration:none;">Dashboard</a>
+        &rsaquo;
+        <a th:href="@{/admin/items}" style="color:var(--blue);text-decoration:none;">Lotes</a>
+        &rsaquo;
+        <span th:text="${editando} ? 'Editar Lote' : 'Novo Lote'"></span>
+    </p>
+
+    <div style="max-width:640px; margin:0 auto;">
+
+        <h1 class="page-title" th:text="${editando} ? '✏️ Editar Lote' : '➕ Novo Lote'">Lote</h1>
+
+        <div class="alert alert-success" th:if="${sucesso}" th:text="${sucesso}"></div>
+        <div class="alert alert-danger"  th:if="${erroGlobal}" th:text="${erroGlobal}"></div>
+        <div class="alert alert-danger"  th:if="${erro}"       th:text="${erro}"></div>
+
+        <div style="background:var(--white); border:1px solid var(--gray-200); border-radius:var(--radius); padding:2rem; box-shadow:var(--shadow-sm);">
+
+            <form th:action="${editando} ? @{/admin/items/{id}(id=${item.id})} : @{/admin/items}"
+                  th:object="${itemFormDTO}"
+                  method="post"
+                  enctype="multipart/form-data">
+
+                <div class="form-group">
+                    <label for="title">Título</label>
+                    <input type="text" id="title" th:field="*{title}"
+                           th:classappend="${#fields.hasErrors('title')} ? 'erro'"
+                           placeholder="Nome do lote"/>
+                    <div class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Descrição</label>
+                    <textarea id="description" th:field="*{description}" rows="3"
+                              placeholder="Descrição do lote (opcional)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="startingPrice">Preço Inicial (R$)</label>
+                    <input type="number" id="startingPrice" th:field="*{startingPrice}"
+                           th:classappend="${#fields.hasErrors('startingPrice')} ? 'erro'"
+                           step="0.01" min="0.01" placeholder="0,00"/>
+                    <div class="field-error" th:if="${#fields.hasErrors('startingPrice')}" th:errors="*{startingPrice}"></div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div class="form-group">
+                        <label for="startDate">Data de Início</label>
+                        <input type="datetime-local" id="startDate" th:field="*{startDate}"
+                               th:classappend="${#fields.hasErrors('startDate')} ? 'erro'"/>
+                        <div class="field-error" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="endDate">Data de Encerramento</label>
+                        <input type="datetime-local" id="endDate" th:field="*{endDate}"
+                               th:classappend="${#fields.hasErrors('endDate')} ? 'erro'"/>
+                        <div class="field-error" th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}"></div>
+                    </div>
+                </div>
+
+                <!-- ── Fotos ─────────────────────────────────────── -->
+                <div class="form-group">
+                    <label>Fotos do Lote</label>
+
+                    <!-- Galeria de fotos existentes (só no modo edição) -->
+                    <div th:if="${editando and item != null and not #lists.isEmpty(item.images)}"
+                         style="margin-bottom:1rem;">
+                        <p style="font-size:.82rem; color:var(--gray-500); margin-bottom:.6rem;">
+                            Fotos atuais — clique em <strong>Remover</strong> para excluir individualmente:
+                        </p>
+                        <div style="display:flex; flex-wrap:wrap; gap:.6rem;">
+                            <div th:each="img : ${item.images}"
+                                 style="position:relative; display:inline-block;">
+                                <img th:src="${img.url}" alt="foto"
+                                     style="width:90px; height:90px; object-fit:cover;
+                                            border-radius:8px; border:1px solid var(--gray-200);
+                                            display:block;"/>
+                                <form th:action="@{/admin/items/{id}/images/{imgId}/delete(id=${item.id}, imgId=${img.id})}"
+                                      method="post"
+                                      onsubmit="return confirm('Remover esta foto?')"
+                                      style="margin:0;">
+                                    <button type="submit"
+                                            style="position:absolute; top:3px; right:3px;
+                                                   background:rgba(220,38,38,.85); color:#fff;
+                                                   border:none; border-radius:50%; width:22px; height:22px;
+                                                   font-size:.75rem; cursor:pointer; line-height:1;
+                                                   display:flex; align-items:center; justify-content:center;"
+                                            title="Remover foto">✕</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campos de upload — um por foto -->
+                    <div id="imageInputs" style="display:flex; flex-direction:column; gap:.5rem;"></div>
+
+                    <button type="button" id="btnAddPhoto"
+                            style="margin-top:.6rem; display:inline-flex; align-items:center; gap:.4rem;
+                                   padding:7px 14px; border:1.5px dashed var(--blue); border-radius:8px;
+                                   background:var(--white); color:var(--blue); font-size:.88rem;
+                                   cursor:pointer; font-weight:600; transition:background .15s;"
+                            onmouseover="this.style.background='var(--blue-light,#eff6ff)'"
+                            onmouseout="this.style.background='var(--white)'">
+                        📷 Adicionar foto
+                    </button>
+
+                    <p style="font-size:.78rem; color:var(--gray-400); margin-top:.5rem;">
+                        Formatos aceitos: JPG, PNG, WebP, AVIF. As novas fotos serão <em>acrescentadas</em> às já existentes.
+                    </p>
+
+                    <!-- Preview das fotos a enviar -->
+                    <div id="previewContainer"
+                         style="display:flex; flex-wrap:wrap; gap:.6rem; margin-top:.6rem;"></div>
+                </div>
+
+                <div style="display:flex; gap:.8rem; margin-top:1.5rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <span th:text="${editando} ? 'Salvar Alterações' : 'Criar Lote'">Salvar</span>
+                    </button>
+                    <a th:href="@{/admin/items}" class="btn btn-outline">Cancelar</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+var inputCount = 0;
+
+function addPhotoInput() {
+    inputCount++;
+    var inputsDiv = document.getElementById('imageInputs');
+
+    var row = document.createElement('div');
+    row.id = 'row-' + inputCount;
+    row.style.cssText = 'display:flex; align-items:center; gap:.5rem;';
+
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.name = 'images';
+    input.accept = 'image/jpeg,image/png,image/webp,image/avif';
+    input.style.cssText = 'flex:1; padding:7px 10px; border:1.5px solid var(--gray-200); border-radius:8px; font-size:.88rem; background:var(--white);';
+    var rowId = 'row-' + inputCount;
+    input.addEventListener('change', function () { updatePreview(this, rowId); });
+
+    var removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Remover este campo';
+    removeBtn.style.cssText = 'background:var(--gray-100); border:1px solid var(--gray-200); color:var(--gray-500); border-radius:6px; padding:6px 10px; cursor:pointer; font-size:.85rem; flex-shrink:0;';
+    removeBtn.onclick = function () {
+        document.getElementById(rowId).remove();
+        var thumb = document.getElementById('thumb-' + rowId);
+        if (thumb) thumb.remove();
+    };
+
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    inputsDiv.appendChild(row);
+}
+
+function updatePreview(input, rowId) {
+    // Remove preview anterior deste campo
+    var old = document.getElementById('thumb-' + rowId);
+    if (old) old.remove();
+
+    if (!input.files || !input.files[0]) return;
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        var wrap = document.createElement('div');
+        wrap.id = 'thumb-' + rowId;
+        wrap.style.cssText = 'position:relative; display:inline-block;';
+
+        var img = document.createElement('img');
+        img.src = e.target.result;
+        img.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-200);display:block;';
+
+        var label = document.createElement('div');
+        label.textContent = file.name.length > 14 ? file.name.slice(0, 12) + '…' : file.name;
+        label.style.cssText = 'font-size:.65rem;color:var(--gray-400);text-align:center;margin-top:2px;max-width:80px;overflow:hidden;white-space:nowrap;';
+
+        wrap.appendChild(img);
+        wrap.appendChild(label);
+        document.getElementById('previewContainer').appendChild(wrap);
+    };
+    reader.readAsDataURL(file);
+}
+
+document.getElementById('btnAddPhoto').addEventListener('click', addPhotoInput);
+
+// Começa já com um campo vazio
+addPhotoInput();
+</script>
+
+</th:block>
+</body>
+</html>

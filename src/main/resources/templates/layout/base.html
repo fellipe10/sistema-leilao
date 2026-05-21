@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="layout(title, content)"
+      lang="pt-BR">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:replace="${title}">Leilão</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<!-- Overlay (fecha o sidebar ao clicar fora) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <a th:href="@{/}" class="sidebar-brand">🔨 Leilão</a>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Fechar menu">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <a th:href="@{/}" class="sidebar-link">
+            <span class="sidebar-icon">🏠</span> Leilões
+        </a>
+        <a th:href="@{/admin}" class="sidebar-link" sec:authorize="hasRole('ADMIN')">
+            <span class="sidebar-icon">📊</span> Dashboard Admin
+        </a>
+        <a th:href="@{/admin/items}" class="sidebar-link" sec:authorize="hasRole('ADMIN')">
+            <span class="sidebar-icon">📦</span> Gerenciar Lotes
+        </a>
+        <a th:href="@{/admin/items/new}" class="sidebar-link" sec:authorize="hasRole('ADMIN')">
+            <span class="sidebar-icon">➕</span> Novo Lote
+        </a>
+        <a th:href="@{/minha-conta}" class="sidebar-link" sec:authorize="isAuthenticated()">
+            <span class="sidebar-icon">👤</span> Minha Conta
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <form th:action="@{/logout}" method="post" sec:authorize="isAuthenticated()">
+            <button type="submit" class="sidebar-logout">⬅ Sair da conta</button>
+        </form>
+        <div sec:authorize="!isAuthenticated()" style="display:flex;flex-direction:column;gap:8px;">
+            <a th:href="@{/login}"    class="btn btn-outline" style="text-align:center;">Entrar</a>
+            <a th:href="@{/register}" class="btn btn-primary" style="text-align:center;">Cadastrar</a>
+        </div>
+    </div>
+</aside>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="container nav-inner">
+        <!-- Botão sanduíche à ESQUERDA — visível sempre -->
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <a th:href="@{/}" class="nav-brand">Leilão</a>
+
+        <!-- Direita: usuário logado -->
+        <div class="nav-right">
+            <span class="nav-user" sec:authorize="isAuthenticated()" sec:authentication="name"></span>
+            <a th:href="@{/login}"    class="btn btn-outline btn-sm" sec:authorize="!isAuthenticated()">Entrar</a>
+            <a th:href="@{/register}" class="btn btn-primary btn-sm" sec:authorize="!isAuthenticated()">Cadastrar</a>
+        </div>
+    </div>
+</nav>
+
+<main class="main-content">
+    <th:block th:replace="${content}"/>
+</main>
+
+<footer class="footer">
+    <div class="container">© 2026 Sistema de Leilão — Todos os direitos reservados</div>
+</footer>
+
+<script>
+    (function () {
+        var toggle  = document.getElementById('navToggle');
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+        var closeBtn= document.getElementById('sidebarClose');
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            overlay.classList.add('open');
+            toggle.classList.add('open');
+            toggle.setAttribute('aria-expanded', 'true');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+            toggle.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+        }
+
+        toggle.addEventListener('click', function () {
+            sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+        });
+
+        overlay.addEventListener('click', closeSidebar);
+        closeBtn.addEventListener('click', closeSidebar);
+
+        // Fecha com ESC
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeSidebar();
+        });
+    })();
+</script>
+
+</body>
+</html>

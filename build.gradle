@@ -1,0 +1,66 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.5'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.leilao'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Spring Boot Web
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Spring Data JPA
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // Spring WebSocket (STOMP)
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+    // Thymeleaf
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+    // Thymeleaf + Spring Security extras
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+
+    // Bean Validation
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // PostgreSQL Driver
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // Lombok (versão explícita para evitar TypeTag::UNKNOWN com Java 17)
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+
+    // Spring Boot DevTools (hot reload de templates e classes)
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Spring Boot Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // Spring Security Test
+    testImplementation 'org.springframework.security:spring-security-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

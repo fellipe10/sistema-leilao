@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::main-content})}"
+      lang="pt-BR">
+<head>
+    <title>Minha Conta — Leilão</title>
+    <style>
+        /* Cabeçalho do perfil */
+        .perfil-header { background: #1e3a5f; color: #fff; border-radius: 12px;
+                         padding: 1.5rem 2rem; margin-bottom: 2rem;
+                         display: flex; align-items: center; gap: 1.2rem; }
+        .avatar { width: 60px; height: 60px; background: #2563eb; border-radius: 50%;
+                  display: flex; align-items: center; justify-content: center;
+                  font-size: 1.6rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+        .perfil-info h1 { font-size: 1.3rem; margin-bottom: .2rem; }
+        .perfil-info p  { font-size: .9rem; color: #94a3b8; }
+
+        /* Cards de resumo */
+        .resumo-grid { display: grid; grid-template-columns: repeat(3, 1fr);
+                       gap: 1rem; margin-bottom: 2rem; }
+        @media (max-width: 640px) { .resumo-grid { grid-template-columns: 1fr; } }
+        .resumo-card { background: #fff; border-radius: 10px; padding: 1.2rem 1.5rem;
+                       box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+        .resumo-card small { display: block; color: #94a3b8; font-size: .8rem; margin-bottom: .3rem; }
+        .resumo-card strong { font-size: 1.6rem; font-weight: 800; color: #1e293b; }
+
+        /* Seções */
+        .secao { margin-bottom: 2.5rem; }
+        .secao h2 { font-size: 1.1rem; font-weight: 700; color: #1e293b;
+                    margin-bottom: 1rem; padding-bottom: .5rem;
+                    border-bottom: 2px solid #e2e8f0; }
+
+        .tabela-wrap { background: #fff; border-radius: 10px; overflow: hidden;
+                       box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+        .vazio { text-align: center; color: #94a3b8; padding: 1.5rem; }
+
+        .badge-pago      { background: #dcfce7; color: #15803d; }
+        .badge-aguardando{ background: #fef9c3; color: #854d0e; }
+
+        .link-item { color: #2563eb; text-decoration: none; font-weight: 600; }
+        .link-item:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<th:block th:fragment="main-content">
+<div class="inner-content">
+
+    <!-- Cabeçalho do perfil -->
+    <div class="perfil-header">
+        <div class="avatar" th:text="${#strings.toUpperCase(#strings.substring(currentUser.name, 0, 1))}"></div>
+        <div class="perfil-info">
+            <h1 th:text="${currentUser.name}">Nome do Usuário</h1>
+            <p th:text="${currentUser.email}">email@exemplo.com</p>
+            <p style="margin-top:.3rem; font-size:.85rem; color:#4ade80;">
+                Código de licitante: <strong th:text="${'#' + currentUser.codigoBidder}"></strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Cards de resumo -->
+    <div class="resumo-grid">
+        <div class="resumo-card">
+            <small>Total de Lances</small>
+            <strong th:text="${#lists.size(lances)}">0</strong>
+        </div>
+        <div class="resumo-card">
+            <small>Leilões Ganhos</small>
+            <strong th:text="${#lists.size(pagamentos)}">0</strong>
+        </div>
+        <div class="resumo-card">
+            <small>Pagamentos Confirmados</small>
+            <strong th:text="${#lists.size(pagamentos.?[status.name() == 'PAGO'])}">0</strong>
+        </div>
+    </div>
+
+    <!-- Histórico de lances -->
+    <div class="secao">
+        <h2>🏷️ Meus Lances</h2>
+        <div class="tabela-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lote</th>
+                        <th>Valor do Lance</th>
+                        <th>Data / Hora</th>
+                        <th>Status do Leilão</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(lances)}">
+                        <td colspan="4" class="vazio">Você ainda não deu nenhum lance.</td>
+                    </tr>
+                    <tr th:each="lance : ${lances}">
+                        <td>
+                            <a th:href="@{/items/{id}(id=${lance.item.id})}"
+                               class="link-item"
+                               th:text="${lance.item.title}">Título</a>
+                        </td>
+                        <td th:text="${'R$ ' + #numbers.formatDecimal(lance.amount, 1, 'POINT', 2, 'COMMA')}"></td>
+                        <td th:text="${#temporals.format(lance.timestamp, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                        <td>
+                            <span th:if="${lance.item.status.name() == 'ATIVO'}"     class="badge badge-ativo">Ativo</span>
+                            <span th:if="${lance.item.status.name() == 'PENDENTE'}"  class="badge badge-pendente">Pendente</span>
+                            <span th:if="${lance.item.status.name() == 'ENCERRADO'}" class="badge badge-encerrado">Encerrado</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Histórico de pagamentos -->
+    <div class="secao">
+        <h2>💳 Meus Pagamentos</h2>
+        <div class="tabela-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lote</th>
+                        <th>Valor</th>
+                        <th>Método</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(pagamentos)}">
+                        <td colspan="6" class="vazio">Nenhum pagamento registrado.</td>
+                    </tr>
+                    <tr th:each="pag : ${pagamentos}">
+                        <td>
+                            <a th:href="@{/items/{id}(id=${pag.item.id})}"
+                               class="link-item"
+                               th:text="${pag.item.title}">Título</a>
+                        </td>
+                        <td th:text="${'R$ ' + #numbers.formatDecimal(pag.valor, 1, 'POINT', 2, 'COMMA')}"></td>
+                        <td th:text="${pag.metodo != null ? (pag.metodo.name() == 'PIX' ? 'PIX' : 'Cartão') : '—'}"></td>
+                        <td>
+                            <span th:if="${pag.status.name() == 'PAGO'}"      class="badge badge-pago">Pago</span>
+                            <span th:if="${pag.status.name() == 'PENDENTE'}"  class="badge badge-aguardando">Pendente</span>
+                            <span th:if="${pag.status.name() == 'CANCELADO'}" class="badge badge-encerrado">Cancelado</span>
+                        </td>
+                        <td th:text="${pag.pagoEm != null
+                                        ? #temporals.format(pag.pagoEm, 'dd/MM/yyyy HH:mm')
+                                        : #temporals.format(pag.criadoEm, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td>
+                            <a th:if="${pag.status.name() == 'PENDENTE'}"
+                               th:href="@{/pagamento/{id}(id=${pag.item.id})}"
+                               class="badge badge-aguardando"
+                               style="text-decoration:none; cursor:pointer;">
+                                Pagar agora
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+</th:block>
+</body>
+</html>

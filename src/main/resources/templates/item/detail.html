@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="pt-BR">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${item.title} + ' — Leilão'">Detalhe do Lote</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="container nav-inner">
+        <a th:href="@{/}" class="nav-brand">Leilão</a>
+        <div class="nav-links">
+            <a th:href="@{/}">Leilões</a>
+            <span sec:authorize="isAuthenticated()" style="display:contents">
+                <a th:href="@{/minha-conta}">Minha Conta</a>
+                <form th:action="@{/logout}" method="post" style="display:inline">
+                    <button type="submit" class="btn btn-outline btn-sm">Sair</button>
+                </form>
+            </span>
+            <span sec:authorize="!isAuthenticated()" style="display:contents">
+                <a th:href="@{/login}" class="btn btn-outline btn-sm">Entrar</a>
+                <a th:href="@{/register}" class="btn btn-primary btn-sm">Cadastrar</a>
+            </span>
+        </div>
+    </div>
+</nav>
+
+<div class="container main-content">
+
+    <!-- Breadcrumb simples -->
+    <p style="font-size:.85rem; color:var(--gray-400); margin-bottom:1.2rem;">
+        <a th:href="@{/}" style="color:var(--blue);text-decoration:none;">Leilões</a>
+        &rsaquo; <span th:text="${item.title}"></span>
+    </p>
+
+    <div class="detail-grid">
+
+        <!-- Galeria de imagens -->
+        <div>
+            <!-- Múltiplas fotos: carrossel -->
+            <div th:if="${not #lists.isEmpty(item.images)}" class="gallery-wrap">
+
+                <!-- Imagem principal -->
+                <div class="gallery-main-wrap">
+                    <button class="gallery-nav gallery-nav-prev" onclick="galleryNav(-1)" aria-label="Anterior">&#8249;</button>
+                    <img id="galleryMain"
+                         th:src="${item.images[0].url}"
+                         th:alt="${item.title}"
+                         class="gallery-main"/>
+                    <button class="gallery-nav gallery-nav-next" onclick="galleryNav(1)" aria-label="Próxima">&#8250;</button>
+                    <!-- Contador -->
+                    <span id="galleryCounter" class="gallery-counter"
+                          th:if="${#lists.size(item.images) > 1}">
+                        1 / <span th:text="${#lists.size(item.images)}"></span>
+                    </span>
+                </div>
+
+                <!-- Miniaturas (só se houver mais de 1) -->
+                <div class="gallery-thumbs" th:if="${#lists.size(item.images) > 1}">
+                    <img th:each="img, stat : ${item.images}"
+                         th:src="${img.url}"
+                         th:alt="${'Foto ' + (stat.index + 1)}"
+                         th:classappend="${stat.index == 0} ? 'gallery-thumb active' : 'gallery-thumb'"
+                         th:attr="data-index=${stat.index}"
+                         onclick="gallerySelect(this.getAttribute('data-index'))"
+                         class="gallery-thumb"/>
+                </div>
+            </div>
+
+            <!-- Sem imagens -->
+            <div class="placeholder-img" th:if="${#lists.isEmpty(item.images)}">
+                🖼️ <span>Sem imagem</span>
+            </div>
+
+            <!-- Dados das imagens para o JS -->
+            <script th:inline="javascript">
+                var GALLERY_URLS = /*[[${item.images.![url]}]]*/ [];
+            </script>
+        </div>
+
+        <!-- Painel de informações -->
+        <div class="info-panel">
+
+            <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:.6rem;">
+                <h1 th:text="${item.title}">Título do Lote</h1>
+                <span th:if="${item.status.name() == 'ATIVO'}"     class="badge badge-ativo">Ativo</span>
+                <span th:if="${item.status.name() == 'PENDENTE'}"  class="badge badge-pendente">Pendente</span>
+                <span th:if="${item.status.name() == 'ENCERRADO'}" class="badge badge-encerrado">Encerrado</span>
+            </div>
+
+            <p class="desc" th:text="${item.description}"></p>
+
+            <!-- Preços -->
+            <div class="info-row">
+                <div class="info-box">
+                    <small>Preço Inicial</small>
+                    <strong th:text="${'R$ ' + #numbers.formatDecimal(item.startingPrice, 1, 'POINT', 2, 'COMMA')}"></strong>
+                </div>
+                <div class="info-box price-atual">
+                    <small>🏆 Lance Atual</small>
+                    <strong id="current-price"
+                            th:text="${'R$ ' + #numbers.formatDecimal(item.currentPrice, 1, 'POINT', 2, 'COMMA')}"></strong>
+                </div>
+                <div class="info-box" th:if="${penultimoLance != null}">
+                    <small>↩ Lance Anterior</small>
+                    <strong style="color:var(--gray-500);"
+                            id="previous-price"
+                            th:text="${'R$ ' + #numbers.formatDecimal(penultimoLance.amount, 1, 'POINT', 2, 'COMMA')}"></strong>
+                </div>
+            </div>
+
+            <!-- Datas -->
+            <div class="info-row">
+                <div class="info-box">
+                    <small>Início</small>
+                    <strong th:text="${#temporals.format(item.startDate, 'dd/MM/yyyy HH:mm')}"></strong>
+                </div>
+                <div class="info-box">
+                    <small>Encerramento</small>
+                    <strong th:text="${#temporals.format(item.endDate, 'dd/MM/yyyy HH:mm')}"></strong>
+                </div>
+            </div>
+
+            <!-- Timer -->
+            <div class="timer-box" th:if="${item.status.name() == 'ATIVO'}">
+                <small>Tempo Restante</small>
+                <div id="countdown">--:--:--</div>
+            </div>
+
+            <!-- Banner: Encerrado -->
+            <div th:if="${item.status.name() == 'ENCERRADO'}">
+                <div class="banner banner-encerrado"
+                     th:if="${pagamento != null and pagamento.status.name() == 'PAGO'}">
+                    🏁 Leilão Encerrado —
+                    Vencedor: <strong th:text="${item.winner != null ? item.winner.name : 'N/A'}"></strong>
+                    <br/>
+                    <span style="color:var(--green);font-size:.88rem;">✅ Pagamento confirmado</span>
+                </div>
+
+                <div th:if="${pagamento == null or pagamento.status.name() != 'PAGO'}">
+                    <div class="banner banner-encerrado">
+                        🏁 Leilão Encerrado —
+                        <span th:if="${item.winner != null}">
+                            Vencedor: <strong th:text="${item.winner.name}"></strong>
+                        </span>
+                        <span th:if="${item.winner == null}">Sem lances</span>
+                    </div>
+
+                    <div th:if="${currentUser != null
+                                  and item.winner != null
+                                  and currentUser.id == item.winner.id}"
+                         style="margin-top:.8rem;">
+                        <a th:href="@{/pagamento/{id}(id=${item.id})}"
+                           class="btn btn-success">
+                            💳 Realizar Pagamento
+                        </a>
+                    </div>
+                </div>
+
+                <div th:if="${sucessoPagamento}"
+                     class="alert alert-success"
+                     style="margin-top:.6rem;"
+                     th:text="${sucessoPagamento}">
+                </div>
+            </div>
+
+            <!-- Banner: Pendente -->
+            <div class="banner banner-pendente" th:if="${item.status.name() == 'PENDENTE'}">
+                ⏳ Este leilão ainda não foi iniciado.
+            </div>
+
+            <!-- Feedback WebSocket -->
+            <div id="bid-messages"></div>
+
+            <!-- Formulário de lance -->
+            <div class="bid-form"
+                 th:if="${item.status.name() == 'ATIVO'}"
+                 sec:authorize="isAuthenticated()">
+                <h3>💰 Dar um Lance</h3>
+                <form id="bid-form">
+                    <div class="bid-form-row">
+                        <input type="number" id="bid-amount" name="amount"
+                               step="0.01" min="0.01" placeholder="Valor do lance (R$)" required/>
+                        <button type="submit" class="btn btn-success">Dar Lance</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Aviso: não autenticado -->
+            <div class="banner banner-login"
+                 th:if="${item.status.name() == 'ATIVO'}"
+                 sec:authorize="!isAuthenticated()">
+                🔒 <a th:href="@{/login}" style="color:var(--blue);font-weight:600;">Faça login</a>
+                para participar deste leilão.
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Histórico de lances (somente ADMIN) -->
+    <div class="bids-section" sec:authorize="hasRole('ROLE_ADMIN')">
+        <h2>📋 Histórico de Lances</h2>
+        <div class="tabela-wrap">
+            <table id="bids-table">
+                <thead>
+                    <tr>
+                        <th>Data / Hora</th>
+                        <th>Licitante</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody id="bids-tbody">
+                    <tr th:if="${#lists.isEmpty(bids)}">
+                        <td colspan="3" class="no-bids">Nenhum lance ainda. Seja o primeiro! 🎯</td>
+                    </tr>
+                    <tr th:each="bid : ${bids}">
+                        <td th:text="${#temporals.format(bid.timestamp, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                        <td>
+                            <span style="font-weight:600;color:var(--blue);"
+                                  th:text="${'#' + bid.user.codigoBidder}"></span>
+                            <span style="color:var(--gray-500);font-size:.85rem;margin-left:6px;"
+                                  th:text="${bid.user.name}"></span>
+                        </td>
+                        <td>
+                            <strong style="color:var(--green);"
+                                    th:text="${'R$ ' + #numbers.formatDecimal(bid.amount, 1, 'POINT', 2, 'COMMA')}"></strong>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">© 2026 Sistema de Leilão — Todos os direitos reservados</div>
+</footer>
+
+<!-- Variáveis para o auction.js -->
+<script th:inline="javascript">
+    const ITEM_ID  = [[${item.id}]];
+    const IS_ACTIVE = [[${item.status.name() == 'ATIVO'}]];
+    const END_DATE  = [[${#temporals.format(item.endDate, 'yyyy-MM-dd''T''HH:mm:ss')}]];
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script th:src="@{/js/auction.js}"></script>
+
+<script>
+/* ── Galeria de imagens ── */
+var galleryIndex = 0;
+
+function gallerySelect(idx) {
+    idx = parseInt(idx, 10);
+    if (!GALLERY_URLS || idx < 0 || idx >= GALLERY_URLS.length) return;
+    galleryIndex = idx;
+
+    var mainImg = document.getElementById('galleryMain');
+    if (mainImg) mainImg.src = GALLERY_URLS[idx];
+
+    // Atualiza miniatura ativa
+    document.querySelectorAll('.gallery-thumb').forEach(function (t) {
+        t.classList.toggle('active', parseInt(t.getAttribute('data-index'), 10) === idx);
+    });
+
+    // Atualiza contador
+    var counter = document.getElementById('galleryCounter');
+    if (counter) counter.textContent = (idx + 1) + ' / ' + GALLERY_URLS.length;
+}
+
+function galleryNav(dir) {
+    if (!GALLERY_URLS || GALLERY_URLS.length === 0) return;
+    var next = (galleryIndex + dir + GALLERY_URLS.length) % GALLERY_URLS.length;
+    gallerySelect(next);
+}
+</script>
+
+</body>
+</html>

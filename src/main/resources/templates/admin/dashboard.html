@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::main-content})}"
+      lang="pt-BR">
+<head>
+    <title>Dashboard Admin — Leilão</title>
+    <style>
+        .stats-grid { display: grid;
+                      grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+                      gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: #fff; border-radius: 10px; padding: 1.2rem 1.4rem;
+                     box-shadow: 0 2px 8px rgba(0,0,0,.07); border-left: 4px solid #2563eb; }
+        .stat-card.verde    { border-color: #16a34a; }
+        .stat-card.amarelo  { border-color: #d97706; }
+        .stat-card.vermelho { border-color: #dc2626; }
+        .stat-card.roxo     { border-color: #7c3aed; }
+        .stat-card.ciano    { border-color: #0891b2; }
+        .stat-card small { display: block; font-size: .78rem; color: #94a3b8; margin-bottom: .3rem; }
+        .stat-card strong { font-size: 1.8rem; font-weight: 800; color: #1e293b; }
+        .atalhos { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+        .secao-titulo { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;
+                        padding-bottom: .5rem; border-bottom: 2px solid #e2e8f0; }
+        .tabela-wrap { background: #fff; border-radius: 10px; overflow: hidden;
+                       box-shadow: 0 2px 8px rgba(0,0,0,.07); margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+<th:block th:fragment="main-content">
+<div class="inner-content">
+
+    <h1 class="page-title">📊 Dashboard</h1>
+
+    <div class="atalhos">
+        <a th:href="@{/admin/items/new}" class="btn btn-primary">+ Novo Lote</a>
+        <a th:href="@{/admin/items}"     class="btn btn-outline">Ver todos os lotes</a>
+    </div>
+
+    <!-- Cards de stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <small>Total de Lotes</small>
+            <strong th:text="${totalItens}">0</strong>
+        </div>
+        <div class="stat-card verde">
+            <small>Leilões Ativos</small>
+            <strong th:text="${ativos}">0</strong>
+        </div>
+        <div class="stat-card amarelo">
+            <small>Pendentes</small>
+            <strong th:text="${pendentes}">0</strong>
+        </div>
+        <div class="stat-card vermelho">
+            <small>Encerrados</small>
+            <strong th:text="${encerrados}">0</strong>
+        </div>
+        <div class="stat-card roxo">
+            <small>Total de Lances</small>
+            <strong th:text="${totalLances}">0</strong>
+        </div>
+        <div class="stat-card ciano">
+            <small>Usuários</small>
+            <strong th:text="${totalUsuarios}">0</strong>
+        </div>
+        <div class="stat-card verde">
+            <small>Receita Confirmada</small>
+            <strong th:text="${'R$ ' + #numbers.formatDecimal(receitaTotal, 1, 'POINT', 2, 'COMMA')}">R$ 0,00</strong>
+        </div>
+    </div>
+
+    <!-- Últimos lotes -->
+    <p class="secao-titulo">🕒 Últimos Lotes Cadastrados</p>
+    <div class="tabela-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Preço Atual</th>
+                    <th>Encerramento</th>
+                    <th>Status</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${#lists.isEmpty(ultimosItens)}">
+                    <td colspan="5" style="text-align:center;color:#94a3b8;padding:1.5rem;">
+                        Nenhum lote cadastrado ainda.
+                    </td>
+                </tr>
+                <tr th:each="item : ${ultimosItens}">
+                    <td th:text="${item.title}"></td>
+                    <td th:text="${'R$ ' + #numbers.formatDecimal(item.currentPrice, 1, 'POINT', 2, 'COMMA')}"></td>
+                    <td th:text="${#temporals.format(item.endDate, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td>
+                        <span th:if="${item.status.name() == 'ATIVO'}"     class="badge badge-ativo">Ativo</span>
+                        <span th:if="${item.status.name() == 'PENDENTE'}"  class="badge badge-pendente">Pendente</span>
+                        <span th:if="${item.status.name() == 'ENCERRADO'}" class="badge badge-encerrado">Encerrado</span>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;flex-wrap:nowrap;">
+                            <a th:href="@{/items/{id}(id=${item.id})}"
+                               class="btn btn-sm btn-outline">Ver</a>
+                            <a th:href="@{/admin/items/{id}/edit(id=${item.id})}"
+                               class="btn btn-sm btn-outline">Editar</a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::main-content})}"
+      lang="pt-BR">
+<head>
+    <title>Pagamento — Leilão</title>
+</head>
+<body>
+<th:block th:fragment="main-content">
+<div class="inner-content">
+
+<style>
+    .checkout-wrap { max-width: 520px; margin: 0 auto; }
+
+    .checkout-card { background: #fff; border-radius: 12px;
+                box-shadow: 0 4px 16px rgba(0,0,0,.1); overflow: hidden; }
+
+    .resumo { background: #1e3a5f; color: #fff; padding: 1.4rem 1.8rem; }
+    .resumo h2 { font-size: 1rem; font-weight: 400; color: #94a3b8; margin-bottom: .3rem; }
+    .resumo .item-nome { font-size: 1.1rem; font-weight: 700; }
+    .resumo .total { font-size: 1.8rem; font-weight: 800; margin-top: .4rem; color: #4ade80; }
+
+    .tabs { display: flex; border-bottom: 2px solid #e2e8f0; }
+    .tab-btn { flex: 1; padding: 1rem; background: none; border: none;
+               font-size: .95rem; font-weight: 600; cursor: pointer;
+               color: #64748b; transition: all .2s; }
+    .tab-btn.active { color: #2563eb; border-bottom: 2px solid #2563eb; margin-bottom: -2px; }
+    .tab-btn:hover { background: #f8fafc; }
+
+    .tab-conteudo { padding: 1.8rem; display: none; }
+    .tab-conteudo.active { display: block; }
+
+    .linha-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+
+    .pix-box { text-align: center; }
+    .pix-qr { width: 180px; height: 180px; margin: 1rem auto;
+              background: #f1f5f9; border: 2px dashed #cbd5e1;
+              border-radius: 10px; display: flex; align-items: center;
+              justify-content: center; overflow: hidden; }
+    .pix-qr svg { width: 120px !important; height: 120px !important;
+                  max-width: 120px; max-height: 120px; opacity: .85; }
+    .pix-chave { background: #f1f5f9; border-radius: 8px; padding: .7rem 1rem;
+                 font-size: .82rem; color: #475569; word-break: break-all;
+                 margin: .6rem 0 .3rem; cursor: pointer; }
+    .pix-chave:hover { background: #e2e8f0; }
+    .pix-dica { font-size: .75rem; color: #2563eb; margin-bottom: 1.2rem; }
+    .pix-info { font-size: .85rem; color: #475569; margin-bottom: 1rem; line-height: 1.6; }
+
+    .btn-pagar { background: #16a34a; color: #fff; width:100%; padding:.85rem;
+                 border:none; border-radius:8px; font-size:1rem; font-weight:700;
+                 cursor:pointer; transition:background .2s; margin-top: .5rem; }
+    .btn-pagar:hover { background: #15803d; }
+    .btn-pix { background: #00b4d8; color: #fff; width:100%; padding:.85rem;
+               border:none; border-radius:8px; font-size:1rem; font-weight:700;
+               cursor:pointer; transition:background .2s; margin-top: .5rem; }
+    .btn-pix:hover { background: #0096c7; }
+
+    .alerta-checkout { padding: .8rem 1rem; border-radius: 8px;
+                       margin: 1rem 1.8rem 0; font-size: .9rem;
+                       background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+    .pago-box { text-align: center; padding: 2rem 1.8rem; }
+    .pago-box .icone { font-size: 3rem; margin-bottom: .6rem; }
+    .pago-box h3 { color: #16a34a; font-size: 1.2rem; }
+    .pago-box p { color: #475569; font-size: .9rem; margin-top: .4rem; }
+    .link-voltar { display: block; text-align: center; margin-top: 1.2rem;
+                   color: #2563eb; font-size: .9rem; text-decoration: none; }
+    .link-voltar:hover { text-decoration: underline; }
+    .nota-segura { text-align: center; font-size: .78rem; color: #94a3b8; margin-top: 1rem; }
+</style>
+
+    <div class="checkout-wrap">
+        <div class="checkout-card">
+
+            <!-- Resumo do pedido -->
+            <div class="resumo">
+                <h2>Pagamento do Lote</h2>
+                <div class="item-nome" th:text="${pagamento.item.title}">Título</div>
+                <div class="total"
+                     th:text="${'R$ ' + #numbers.formatDecimal(pagamento.valor, 1, 'POINT', 2, 'COMMA')}">
+                    R$ 0,00
+                </div>
+            </div>
+
+            <!-- Já pago -->
+            <div class="pago-box" th:if="${pagamento.status.name() == 'PAGO'}">
+                <div class="icone">✅</div>
+                <h3>Pagamento Confirmado!</h3>
+                <p>Seu pagamento foi processado com sucesso.</p>
+                <p th:text="${'Método: ' + (pagamento.metodo.name() == 'PIX' ? 'PIX' : 'Cartão de Crédito')}"></p>
+                <a th:href="@{/items/{id}(id=${pagamento.item.id})}" class="link-voltar">
+                    Voltar ao lote
+                </a>
+            </div>
+
+            <!-- Formulário de pagamento (apenas PENDENTE) -->
+            <div th:if="${pagamento.status.name() == 'PENDENTE'}">
+
+                <div class="alerta-checkout"
+                     th:if="${erroPagamento}"
+                     th:text="${erroPagamento}">
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="trocarTab('pix', this)">
+                        🏦 PIX
+                    </button>
+                    <button class="tab-btn" onclick="trocarTab('cartao', this)">
+                        💳 Cartão de Crédito
+                    </button>
+                </div>
+
+                <!-- Tab PIX -->
+                <div id="tab-pix" class="tab-conteudo active">
+                    <div class="pix-box">
+                        <p class="pix-info">
+                            Escaneie o QR Code ou copie a chave PIX abaixo.
+                            A confirmação é instantânea.
+                        </p>
+                        <div class="pix-qr">
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+                                 width="120" height="120">
+                                <rect x="10" y="10" width="30" height="30" fill="#1a1a2e"/>
+                                <rect x="15" y="15" width="20" height="20" fill="#fff"/>
+                                <rect x="60" y="10" width="30" height="30" fill="#1a1a2e"/>
+                                <rect x="65" y="15" width="20" height="20" fill="#fff"/>
+                                <rect x="10" y="60" width="30" height="30" fill="#1a1a2e"/>
+                                <rect x="15" y="65" width="20" height="20" fill="#fff"/>
+                                <rect x="45" y="45" width="10" height="10" fill="#1a1a2e"/>
+                                <rect x="60" y="50" width="10" height="10" fill="#1a1a2e"/>
+                                <rect x="75" y="60" width="10" height="10" fill="#1a1a2e"/>
+                                <rect x="60" y="75" width="20" height="10" fill="#1a1a2e"/>
+                            </svg>
+                        </div>
+                        <p style="font-size:.8rem; color:#94a3b8; margin-bottom:.3rem;">Chave PIX</p>
+                        <div class="pix-chave" id="chave-pix" onclick="copiarChavePix(this)">
+                            00020126580014br.gov.bcb.pix0136leilao@sistema.com.br5204000053039865802BR5913SistemaLeilao6008Brasilia62070503***6304ABCD
+                        </div>
+                        <p class="pix-dica">Clique para copiar a chave</p>
+                    </div>
+
+                    <form th:action="@{/pagamento/{id}(id=${pagamento.item.id})}" method="post">
+                        <input type="hidden" name="metodo" value="PIX"/>
+                        <button type="submit" class="btn-pix">
+                            ✅ Confirmar Pagamento PIX
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Tab Cartão -->
+                <div id="tab-cartao" class="tab-conteudo">
+                    <form th:action="@{/pagamento/{id}(id=${pagamento.item.id})}" method="post">
+                        <input type="hidden" name="metodo" value="CARTAO"/>
+
+                        <div class="form-group">
+                            <label>Nome no Cartão</label>
+                            <input type="text" name="nomeCartao"
+                                   placeholder="NOME SOBRENOME"
+                                   style="text-transform:uppercase" required/>
+                        </div>
+                        <div class="form-group">
+                            <label>Número do Cartão</label>
+                            <input type="text" name="numeroCartao"
+                                   placeholder="0000 0000 0000 0000"
+                                   maxlength="19" id="input-numero-cartao" required/>
+                        </div>
+                        <div class="linha-2">
+                            <div class="form-group">
+                                <label>Validade</label>
+                                <input type="text" name="validadeCartao"
+                                       placeholder="MM/AA" maxlength="5"
+                                       id="input-validade" required/>
+                            </div>
+                            <div class="form-group">
+                                <label>CVV</label>
+                                <input type="text" name="cvv"
+                                       placeholder="000" maxlength="4" required/>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-pagar">
+                            🔒 Pagar com Cartão
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+        <p class="nota-segura">🔒 Ambiente simulado — nenhum dado real é processado</p>
+    </div>
+
+    <script>
+        function trocarTab(tab, btn) {
+            document.querySelectorAll('.tab-conteudo').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function copiarChavePix(el) {
+            navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+                el.style.background = '#dcfce7';
+                el.style.color = '#15803d';
+                setTimeout(() => { el.style.background = ''; el.style.color = ''; }, 1500);
+            });
+        }
+
+        const inputNumero = document.getElementById('input-numero-cartao');
+        if (inputNumero) {
+            inputNumero.addEventListener('input', function () {
+                let v = this.value.replace(/\D/g, '').slice(0, 16);
+                this.value = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+            });
+        }
+
+        const inputValidade = document.getElementById('input-validade');
+        if (inputValidade) {
+            inputValidade.addEventListener('input', function () {
+                let v = this.value.replace(/\D/g, '').slice(0, 4);
+                if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
+                this.value = v;
+            });
+        }
+    </script>
+
+</div>
+</th:block>
+</body>
+</html>

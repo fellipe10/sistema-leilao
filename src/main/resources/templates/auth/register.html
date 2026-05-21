@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::main-content})}"
+      lang="pt-BR">
+<head>
+    <title>Cadastro — Leilão</title>
+    <style>
+        .auth-wrap { display: flex; justify-content: center; padding: 2rem 1rem; }
+        .auth-card { background: #fff; border-radius: 12px; padding: 2.5rem 2rem;
+                     box-shadow: 0 4px 16px rgba(0,0,0,.1); width: 100%; max-width: 460px; }
+        .auth-logo { font-size: 2.5rem; text-align: center; margin-bottom: .5rem; }
+        .auth-title { font-size: 1.4rem; font-weight: 700; text-align: center;
+                      margin-bottom: 1.5rem; color: #1e293b; }
+        .auth-footer { text-align: center; margin-top: 1.2rem;
+                       font-size: .9rem; color: #64748b; }
+        .auth-footer a { color: #2563eb; text-decoration: none; font-weight: 600; }
+        .auth-footer a:hover { text-decoration: underline; }
+        .field-error { color: #b91c1c; font-size: .8rem; margin-top: .3rem; }
+        input.erro { border-color: #ef4444 !important; }
+        .info-code { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px;
+                     padding: .7rem 1rem; font-size: .85rem; color: #15803d;
+                     margin-bottom: 1.2rem; }
+    </style>
+</head>
+<body>
+<th:block th:fragment="main-content">
+<div class="inner-content">
+
+    <div class="auth-wrap">
+        <div class="auth-card">
+
+            <div class="auth-logo">🔨</div>
+            <h1 class="auth-title">Criar conta</h1>
+
+            <div class="info-code">
+                🔒 Ao se cadastrar, você receberá um <strong>código anônimo</strong>
+                que será usado em vez do seu nome nos leilões.
+            </div>
+
+            <div class="alert alert-danger" th:if="${erroGlobal}" th:text="${erroGlobal}"></div>
+
+            <form th:action="@{/register}" th:object="${registerDTO}" method="post">
+
+                <div class="form-group">
+                    <label for="name">Nome completo</label>
+                    <input type="text" id="name" th:field="*{name}"
+                           th:classappend="${#fields.hasErrors('name')} ? 'erro'"
+                           placeholder="Seu nome completo" autofocus/>
+                    <div class="field-error" th:if="${#fields.hasErrors('name')}"
+                         th:errors="*{name}"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" th:field="*{email}"
+                           th:classappend="${#fields.hasErrors('email')} ? 'erro'"
+                           placeholder="seu@email.com"/>
+                    <div class="field-error" th:if="${#fields.hasErrors('email')}"
+                         th:errors="*{email}"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" th:field="*{password}"
+                           th:classappend="${#fields.hasErrors('password')} ? 'erro'"
+                           placeholder="Mínimo 6 caracteres"/>
+                    <div class="field-error" th:if="${#fields.hasErrors('password')}"
+                         th:errors="*{password}"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirmar Senha</label>
+                    <input type="password" id="confirmPassword" th:field="*{confirmPassword}"
+                           th:classappend="${#fields.hasErrors('confirmPassword')} ? 'erro'"
+                           placeholder="Repita a senha"/>
+                    <div class="field-error" th:if="${#fields.hasErrors('confirmPassword')}"
+                         th:errors="*{confirmPassword}"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block"
+                        style="margin-top:.8rem; width:100%; padding:.8rem;">
+                    Criar Conta
+                </button>
+            </form>
+
+            <p class="auth-footer">
+                Já tem conta? <a th:href="@{/login}">Entrar</a>
+            </p>
+
+        </div>
+    </div>
+
+</div>
+</th:block>
+</body>
+</html>

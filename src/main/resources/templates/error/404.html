@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Página não encontrada — Leilão</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8;
+               display: flex; flex-direction: column; min-height: 100vh; }
+        nav { background: #1a1a2e; padding: .9rem 2rem; }
+        nav a { color: #fff; font-weight: 700; font-size: 1.1rem; text-decoration: none; }
+        .container { flex: 1; display: flex; flex-direction: column;
+                     align-items: center; justify-content: center;
+                     text-align: center; padding: 3rem 1.5rem; }
+        .code { font-size: 7rem; font-weight: 900; color: #e2e8f0;
+                line-height: 1; margin-bottom: .5rem; }
+        h1 { font-size: 1.8rem; color: #1e293b; margin-bottom: .8rem; }
+        p  { color: #64748b; font-size: 1rem; max-width: 420px;
+             margin-bottom: 2rem; line-height: 1.6; }
+        .btn { display: inline-block; padding: .75rem 1.8rem; background: #2563eb;
+               color: #fff; border-radius: 8px; text-decoration: none;
+               font-weight: 600; font-size: .95rem; }
+        .btn:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <nav><a th:href="@{/}">🔨 Leilão</a></nav>
+    <div class="container">
+        <div class="code">404</div>
+        <h1>Página não encontrada</h1>
+        <p th:text="${mensagem} ?: 'A página que você buscou não existe ou foi removida.'"></p>
+        <a th:href="@{/}" class="btn">Voltar ao início</a>
+    </div>
+</body>
+</html>

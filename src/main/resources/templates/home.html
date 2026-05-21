@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::main-content})}"
+      lang="pt-BR">
+    <head>
+        <title>Leilões em Andamento</title>
+    </head>
+    <body>
+        <th:block th:fragment="main-content">
+
+            <!-- Hero Banner (full width) -->
+            <div class="hero-section">
+                <h1>🔨 Leilões em Andamento</h1>
+                <p>Dê seu lance e leve os melhores lotes pelo melhor preço.</p>
+            </div>
+
+            <!-- Conteúdo com padding lateral -->
+            <div class="home-content">
+
+                <!-- Estado vazio -->
+                <div th:if="${#lists.isEmpty(items)}" class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <p>Nenhum leilão ativo no momento.<br/>Volte em breve!</p>
+                </div>
+
+                <!-- Filtros da home -->
+                <div class="home-filtros" th:unless="${#lists.isEmpty(items)}">
+                    <input type="text" id="filtroTitulo" placeholder="🔍 Buscar por título..."
+                           oninput="aplicarFiltros()"
+                           style="flex:2;min-width:180px;padding:8px 12px;border:1.5px solid var(--gray-200);
+                                  border-radius:7px;font-size:.9rem;font-family:inherit;"/>
+                    <select id="filtroStatus" onchange="aplicarFiltros()"
+                            style="flex:1;min-width:130px;padding:8px 12px;border:1.5px solid var(--gray-200);
+                                   border-radius:7px;font-size:.9rem;font-family:inherit;background:var(--white);">
+                        <option value="">Todos os status</option>
+                        <option value="ativo">Ativo</option>
+                        <option value="encerrado">Encerrado</option>
+                        <option value="pendente">Pendente</option>
+                    </select>
+                </div>
+
+                <!-- Barra de alternância de layout -->
+                <div class="layout-toggle-bar" th:unless="${#lists.isEmpty(items)}">
+                    <span class="layout-toggle-label">Visualização:</span>
+                    <button class="layout-btn active" id="btnGrid" title="Grade" onclick="setLayout('grid')">
+                        ⊞ Grade
+                    </button>
+                    <button class="layout-btn" id="btnList" title="Lista" onclick="setLayout('list')">
+                        ☰ Lista
+                    </button>
+                </div>
+
+                <!-- Grid / Lista de cards -->
+                <div class="cards-grid" id="cardsContainer" th:unless="${#lists.isEmpty(items)}">
+                    <div class="card" th:each="item : ${items}">
+                        <div class="card-img-wrap">
+                            <img th:if="${item.imageUrl != null}"
+                                 th:src="${item.imageUrl}"
+                                 th:alt="${item.title}"
+                                 class="card-img"/>
+                            <div class="card-img-placeholder"
+                                 th:unless="${item.imageUrl != null}">Sem imagem</div>
+                            <span th:if="${item.status.name() == 'ATIVO'}"     class="badge badge-ativo item-status-badge">Ativo</span>
+                            <span th:if="${item.status.name() == 'PENDENTE'}"  class="badge badge-pendente item-status-badge">Pendente</span>
+                            <span th:if="${item.status.name() == 'ENCERRADO'}" class="badge badge-encerrado item-status-badge">Encerrado</span>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title" th:text="${item.title}">Título</h3>
+
+                            <p class="card-price">
+                                🏆 Lance atual:
+                                <strong th:text="${'R$ ' + #numbers.formatDecimal(item.currentPrice, 1, 'POINT', 2, 'COMMA')}"></strong>
+                            </p>
+
+                            <p class="card-price card-price-anterior"
+                               th:if="${penultimosPorItem[item.id] != null}">
+                                ↩ Lance anterior:
+                                <span th:text="${'R$ ' + #numbers.formatDecimal(penultimosPorItem[item.id], 1, 'POINT', 2, 'COMMA')}"></span>
+                            </p>
+
+                            <p class="card-timer">
+                                ⏱ <span class="countdown"
+                                        th:attr="data-enddate=${#temporals.format(item.endDate, 'yyyy-MM-dd''T''HH:mm:ss')}">
+                                    --:--:--
+                                </span>
+                            </p>
+
+                            <a th:href="@{/items/{id}(id=${item.id})}"
+                               class="btn btn-primary btn-block">Ver Leilão →</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <script>
+                /* ── Countdown ── */
+                (function () {
+                    document.querySelectorAll('.countdown').forEach(function (el) {
+                        var end = new Date(el.getAttribute('data-enddate')).getTime();
+                        function tick() {
+                            var diff = end - Date.now();
+                            if (diff <= 0) {
+                                el.textContent = 'Encerrado';
+                                // Atualiza o badge do card para "Encerrado"
+                                var card = el.closest('.card');
+                                if (card) {
+                                    var badge = card.querySelector('.item-status-badge');
+                                    if (badge) {
+                                        badge.className = 'badge badge-encerrado item-status-badge';
+                                        badge.textContent = 'Encerrado';
+                                    }
+                                }
+                                return;
+                            }
+                            var h = Math.floor(diff / 3600000);
+                            var m = Math.floor((diff % 3600000) / 60000);
+                            var s = Math.floor((diff % 60000) / 1000);
+                            el.textContent =
+                                    String(h).padStart(2,'0') + ':' +
+                                    String(m).padStart(2,'0') + ':' +
+                                    String(s).padStart(2,'0');
+                        }
+                        tick();
+                        setInterval(tick, 1000);
+                    });
+                })();
+
+                /* ── Filtros ── */
+                function aplicarFiltros() {
+                    var titulo = document.getElementById('filtroTitulo').value.toLowerCase();
+                    var status = document.getElementById('filtroStatus').value.toLowerCase();
+                    document.querySelectorAll('#cardsContainer .card').forEach(function(card) {
+                        var t = (card.querySelector('.card-title') || {}).textContent || '';
+                        var badgeEl = card.querySelector('.badge');
+                        var s = badgeEl ? badgeEl.textContent.trim().toLowerCase() : '';
+                        var okTitulo = !titulo || t.toLowerCase().includes(titulo);
+                        var okStatus = !status || s.includes(status);
+                        card.style.display = (okTitulo && okStatus) ? '' : 'none';
+                    });
+                }
+
+                /* ── Alternância de layout ── */
+                function setLayout(mode) {
+                    var container = document.getElementById('cardsContainer');
+                    var btnGrid   = document.getElementById('btnGrid');
+                    var btnList   = document.getElementById('btnList');
+
+                    if (mode === 'list') {
+                        container.classList.add('cards-list');
+                        btnList.classList.add('active');
+                        btnGrid.classList.remove('active');
+                    } else {
+                        container.classList.remove('cards-list');
+                        btnGrid.classList.add('active');
+                        btnList.classList.remove('active');
+                    }
+                    localStorage.setItem('leilao-layout', mode);
+                }
+
+                /* Aplica preferência salva ao carregar */
+                (function () {
+                    var saved = localStorage.getItem('leilao-layout') || 'grid';
+                    setLayout(saved);
+                })();
+            </script>
+
+        </th:block>
+    </body>
+</html>

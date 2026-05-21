@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::main-content})}"
+      lang="pt-BR">
+<head>
+    <title>Login — Leilão</title>
+    <style>
+        .auth-wrap { display: flex; justify-content: center; padding: 2rem 1rem; }
+        .auth-card { background: #fff; border-radius: 12px; padding: 2.5rem 2rem;
+                     box-shadow: 0 4px 16px rgba(0,0,0,.1); width: 100%; max-width: 420px; }
+        .auth-logo { font-size: 2.5rem; text-align: center; margin-bottom: .5rem; }
+        .auth-title { font-size: 1.4rem; font-weight: 700; text-align: center;
+                      margin-bottom: 1.5rem; color: #1e293b; }
+        .auth-footer { text-align: center; margin-top: 1.2rem;
+                       font-size: .9rem; color: #64748b; }
+        .auth-footer a { color: #2563eb; text-decoration: none; font-weight: 600; }
+        .auth-footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<th:block th:fragment="main-content">
+<div class="inner-content">
+
+    <div class="auth-wrap">
+        <div class="auth-card">
+
+            <div class="auth-logo">🔨</div>
+            <h1 class="auth-title">Entrar na sua conta</h1>
+
+            <div class="alert alert-danger" th:if="${param.error}">
+                Email ou senha inválidos.
+            </div>
+            <div class="alert alert-success" th:if="${param.registered}">
+                Cadastro realizado! Faça login para continuar.
+            </div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="form-group">
+                    <label for="username">Email</label>
+                    <input type="email" id="username" name="username"
+                           placeholder="seu@email.com" required autofocus/>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password"
+                           placeholder="••••••" required/>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block"
+                        style="margin-top:.8rem; width:100%; padding:.8rem;">
+                    Entrar
+                </button>
+            </form>
+
+            <p class="auth-footer">
+                Não tem conta? <a th:href="@{/register}">Cadastre-se gratuitamente</a>
+            </p>
+
+        </div>
+    </div>
+
+</div>
+</th:block>
+</body>
+</html>
