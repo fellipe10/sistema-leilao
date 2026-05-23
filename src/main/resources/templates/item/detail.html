@@ -204,6 +204,69 @@
         </div>
     </div>
 
+    <!-- Controles admin: status e prorrogação -->
+    <div sec:authorize="hasRole('ROLE_ADMIN')"
+         style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+
+        <!-- Alterar Status -->
+        <div style="background:#fff; border:1px solid var(--gray-200); border-radius:12px;
+                    padding:1.4rem 1.6rem; box-shadow:0 2px 8px rgba(0,0,0,.06);">
+            <p style="font-size:1rem; font-weight:700; margin-bottom:.8rem;
+                      padding-bottom:.5rem; border-bottom:2px solid #e2e8f0;">
+                🔄 Alterar Status
+            </p>
+            <p style="font-size:.85rem; color:var(--gray-500); margin-bottom:.8rem;">
+                Status atual:
+                <strong th:if="${item.status.name() == 'ATIVO'}"     style="color:#16a34a;">Ativo</strong>
+                <strong th:if="${item.status.name() == 'PENDENTE'}"  style="color:#d97706;">Pendente</strong>
+                <strong th:if="${item.status.name() == 'ENCERRADO'}" style="color:#dc2626;">Encerrado</strong>
+            </p>
+            <form th:action="@{/admin/items/{id}/status(id=${item.id})}" method="post"
+                  style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
+                <input type="hidden" name="origem" value="detalhe"/>
+                <select name="novoStatus"
+                        style="flex:1; padding:8px 10px; border:1.5px solid var(--gray-200);
+                               border-radius:8px; font-size:.9rem; font-family:inherit; background:#fff;">
+                    <option value="ATIVO"     th:selected="${item.status.name() == 'ATIVO'}">Ativo</option>
+                    <option value="PENDENTE"  th:selected="${item.status.name() == 'PENDENTE'}">Pendente</option>
+                    <option value="ENCERRADO" th:selected="${item.status.name() == 'ENCERRADO'}">Encerrado</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm"
+                        onclick="return confirm('Confirma a alteração de status?')">
+                    Aplicar
+                </button>
+            </form>
+            <p style="font-size:.72rem; color:var(--gray-400); margin-top:.5rem;">
+                Encerrar define o vencedor. Reabrir limpa o vencedor (lances mantidos).
+            </p>
+        </div>
+
+        <!-- Prorrogar Encerramento -->
+        <div style="background:#fff; border:1px solid var(--gray-200); border-radius:12px;
+                    padding:1.4rem 1.6rem; box-shadow:0 2px 8px rgba(0,0,0,.06);">
+            <p style="font-size:1rem; font-weight:700; margin-bottom:.8rem;
+                      padding-bottom:.5rem; border-bottom:2px solid #e2e8f0;">
+                ⏱ Prorrogar Encerramento
+            </p>
+            <p style="font-size:.85rem; color:var(--gray-500); margin-bottom:.8rem;">
+                Encerramento atual:
+                <strong th:text="${#temporals.format(item.endDate, 'dd/MM/yyyy HH:mm:ss')}"></strong>
+            </p>
+            <form th:action="@{/admin/items/{id}/prorrogar(id=${item.id})}" method="post"
+                  style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
+                <input type="hidden" name="origem" value="detalhe"/>
+                <input type="number" name="segundos" min="1" placeholder="Segundos"
+                       style="flex:1; padding:8px 10px; border:1.5px solid var(--gray-200);
+                              border-radius:8px; font-size:.9rem; font-family:inherit;"/>
+                <button type="submit" class="btn btn-primary btn-sm">Prorrogar</button>
+            </form>
+            <p style="font-size:.72rem; color:var(--gray-400); margin-top:.5rem;">
+                60 = +1 min &nbsp;|&nbsp; 300 = +5 min &nbsp;|&nbsp; 1800 = +30 min
+            </p>
+        </div>
+
+    </div>
+
     <!-- Histórico de lances (somente ADMIN) -->
     <div class="bids-section" sec:authorize="hasRole('ROLE_ADMIN')">
         <h2>📋 Histórico de Lances</h2>

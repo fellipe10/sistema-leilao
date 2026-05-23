@@ -41,6 +41,11 @@ public class ItemService {
         return itemRepository.findByStatusOrderByEndDateAsc(ItemStatus.ATIVO);
     }
 
+    public List<Item> findAllActiveAndPending() {
+        return itemRepository.findByStatusInOrderByEndDateAsc(
+                List.of(ItemStatus.ATIVO, ItemStatus.PENDENTE));
+    }
+
     public List<Item> findAll() {
         return itemRepository.findAll();
     }
@@ -171,6 +176,40 @@ public class ItemService {
         Item item = itemRepository.findById(id)
                                   .orElseThrow(() -> new LancesException("Item não encontrado: " + id));
         itemRepository.delete(item);
+    }
+
+    // ── Controle manual de status ────────────────────────────────
+
+    @Transactional
+    public Item updateStatus(Long id, ItemStatus novoStatus) {
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new LancesException("Item não encontrado: " + id));
+
+        if (novoStatus == ItemStatus.ENCERRADO) {
+            // Encerra: define vencedor como o lance mais alto
+            List<Lances> lances = lancesRepository.findByItemOrderByTimestampDesc(item);
+            item.setWinner(lances.isEmpty() ? null : lances.get(0).getUser());
+        } else {
+            // Reabre (ATIVO ou PENDENTE): limpa vencedor, mantém histórico de lances
+            item.setWinner(null);
+        }
+
+        item.setStatus(novoStatus);
+        return itemRepository.save(item);
+    }
+
+    // ── Prorrogação de tempo ─────────────────────────────────────
+
+    @Transactional
+    public Item prorrogar(Long id, int segundos) {
+        if (segundos <= 0) {
+            throw new LancesException("Informe um número de segundos maior que zero.");
+        }
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new LancesException("Item não encontrado: " + id));
+
+        item.setEndDate(item.getEndDate().plusSeconds(segundos));
+        return itemRepository.save(item);
     }
 
     // ── Utilitários privados ─────────────────────────────────────

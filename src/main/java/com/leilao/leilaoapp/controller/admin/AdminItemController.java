@@ -208,4 +208,39 @@ public class AdminItemController {
         }
         return "redirect:/admin/items/" + id + "/edit";
     }
+
+    @PostMapping("/admin/items/{id}/status")
+    public String updateStatus(@PathVariable Long id,
+                               @RequestParam String novoStatus,
+                               @RequestParam(required = false, defaultValue = "admin") String origem,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            ItemStatus status = ItemStatus.valueOf(novoStatus);
+            itemService.updateStatus(id, status);
+            redirectAttributes.addFlashAttribute("sucesso", "Status atualizado para " + novoStatus + "!");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("erro", "Status inválido: " + novoStatus);
+        } catch (LancesException e) {
+            redirectAttributes.addFlashAttribute("erro", e.getMessage());
+        }
+        return "detalhe".equals(origem)
+                ? "redirect:/items/" + id
+                : "redirect:/admin/items/" + id + "/edit";
+    }
+
+    @PostMapping("/admin/items/{id}/prorrogar")
+    public String prorrogar(@PathVariable Long id,
+                            @RequestParam int segundos,
+                            @RequestParam(required = false, defaultValue = "admin") String origem,
+                            RedirectAttributes redirectAttributes) {
+        try {
+            itemService.prorrogar(id, segundos);
+            redirectAttributes.addFlashAttribute("sucesso", "Lote prorrogado por " + segundos + " segundos!");
+        } catch (LancesException e) {
+            redirectAttributes.addFlashAttribute("erro", e.getMessage());
+        }
+        return "detalhe".equals(origem)
+                ? "redirect:/items/" + id
+                : "redirect:/admin/items/" + id + "/edit";
+    }
 }

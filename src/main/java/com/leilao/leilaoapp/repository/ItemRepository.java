@@ -8,12 +8,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ItemRepository extends JpaRepository<Item, Long> {
-    
+
     List<Item> findByStatus(ItemStatus status);
-    
+
     List<Item> findByStatusAndEndDateBefore(ItemStatus status, LocalDateTime dateTime);
-    
+
     List<Item> findByStatusOrderByEndDateAsc(ItemStatus status);
 
     List<Item> findByStatusAndStartDateBefore(ItemStatus status, LocalDateTime dateTime);
+
+    List<Item> findByStatusInOrderByEndDateAsc(List<ItemStatus> statuses);
 }

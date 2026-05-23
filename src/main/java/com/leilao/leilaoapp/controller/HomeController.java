@@ -23,12 +23,19 @@ public class HomeController {
 
     @GetMapping("/")
     public String home(Model model) {
-        // Encerra no banco qualquer item ATIVO com prazo vencido antes de exibir
-        List<Item> items = itemService.findAllActive().stream()
-                .map(itemService::encerrarSeVencido)
+        // Busca ativos e pendentes; encerra no banco qualquer ATIVO com prazo vencido
+        List<Item> items = itemService.findAllActiveAndPending().stream()
+                .map(item -> {
+                    if (item.getStatus() == com.leilao.leilaoapp.entity.enums.ItemStatus.ATIVO) {
+                        return itemService.encerrarSeVencido(item);
+                    }
+                    return item;
+                })
+                // Remove os que acabaram de ser encerrados (podem ter virado ENCERRADO)
+                .filter(item -> item.getStatus() != com.leilao.leilaoapp.entity.enums.ItemStatus.ENCERRADO)
                 .collect(java.util.stream.Collectors.toList());
 
-        // Para cada item, busca os 2 lances mais recentes e extrai o penúltimo
+        // Para cada item ATIVO, busca os 2 lances mais recentes e extrai o penúltimo
         Map<Long, BigDecimal> penultimosPorItem = new HashMap<>();
         for (Item item : items) {
             List<Lances> top2 = lancesRepository.findTop2ByItemOrderByTimestampDesc(item);

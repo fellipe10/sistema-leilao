@@ -134,6 +134,73 @@
 
             </form>
         </div>
+
+        <!-- ── Controle de Status (só na edição) ───────────────────── -->
+        <div th:if="${editando}" style="margin-top:2rem; background:var(--white); border:1px solid var(--gray-200);
+                    border-radius:var(--radius); padding:1.5rem 2rem; box-shadow:var(--shadow-sm);">
+
+            <p style="font-size:1rem; font-weight:700; margin-bottom:1rem;
+                      padding-bottom:.5rem; border-bottom:2px solid #e2e8f0;">
+                🔄 Alterar Status Manualmente
+            </p>
+
+            <p style="font-size:.85rem; color:var(--gray-500); margin-bottom:1rem;">
+                Status atual:
+                <strong th:if="${item.status.name() == 'ATIVO'}"     style="color:#16a34a;">Ativo</strong>
+                <strong th:if="${item.status.name() == 'PENDENTE'}"  style="color:#d97706;">Pendente</strong>
+                <strong th:if="${item.status.name() == 'ENCERRADO'}" style="color:#dc2626;">Encerrado</strong>
+            </p>
+
+            <form th:action="@{/admin/items/{id}/status(id=${item.id})}" method="post"
+                  style="display:flex; gap:.8rem; align-items:center; flex-wrap:wrap;">
+                <select name="novoStatus"
+                        style="padding:8px 12px; border:1.5px solid var(--gray-200); border-radius:8px;
+                               font-size:.9rem; font-family:inherit; background:var(--white); min-width:160px;">
+                    <option value="ATIVO"     th:selected="${item.status.name() == 'ATIVO'}">Ativo</option>
+                    <option value="PENDENTE"  th:selected="${item.status.name() == 'PENDENTE'}">Pendente</option>
+                    <option value="ENCERRADO" th:selected="${item.status.name() == 'ENCERRADO'}">Encerrado</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm"
+                        onclick="return confirm('Confirma a alteração de status?')">
+                    Aplicar Status
+                </button>
+            </form>
+
+            <p style="font-size:.75rem; color:var(--gray-400); margin-top:.6rem;">
+                Ao encerrar manualmente, o vencedor é definido como o maior lance atual.
+                Ao reabrir, o vencedor é removido mas o histórico de lances é mantido.
+            </p>
+        </div>
+
+        <!-- ── Prorrogação de Tempo (só na edição) ─────────────────── -->
+        <div th:if="${editando}" style="margin-top:1.5rem; background:var(--white); border:1px solid var(--gray-200);
+                    border-radius:var(--radius); padding:1.5rem 2rem; box-shadow:var(--shadow-sm);">
+
+            <p style="font-size:1rem; font-weight:700; margin-bottom:1rem;
+                      padding-bottom:.5rem; border-bottom:2px solid #e2e8f0;">
+                ⏱ Prorrogar Encerramento
+            </p>
+
+            <p style="font-size:.85rem; color:var(--gray-500); margin-bottom:1rem;">
+                Encerramento atual:
+                <strong th:text="${#temporals.format(item.endDate, 'dd/MM/yyyy HH:mm:ss')}"></strong>
+            </p>
+
+            <form th:action="@{/admin/items/{id}/prorrogar(id=${item.id})}" method="post"
+                  style="display:flex; gap:.8rem; align-items:center; flex-wrap:wrap;">
+                <input type="number" name="segundos" min="1" placeholder="Segundos"
+                       style="width:130px; padding:8px 12px; border:1.5px solid var(--gray-200);
+                              border-radius:8px; font-size:.9rem; font-family:inherit;"/>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    Prorrogar
+                </button>
+            </form>
+
+            <p style="font-size:.75rem; color:var(--gray-400); margin-top:.6rem;">
+                Ex: 60 = +1 min &nbsp;|&nbsp; 300 = +5 min &nbsp;|&nbsp; 1800 = +30 min
+            </p>
+        </div>
+
     </div>
 
 </div>

@@ -34,7 +34,6 @@
                                    border-radius:7px;font-size:.9rem;font-family:inherit;background:var(--white);">
                         <option value="">Todos os status</option>
                         <option value="ativo">Ativo</option>
-                        <option value="encerrado">Encerrado</option>
                         <option value="pendente">Pendente</option>
                     </select>
                 </div>
@@ -52,7 +51,8 @@
 
                 <!-- Grid / Lista de cards -->
                 <div class="cards-grid" id="cardsContainer" th:unless="${#lists.isEmpty(items)}">
-                    <div class="card" th:each="item : ${items}">
+                    <div class="card" th:each="item : ${items}"
+                         th:attr="data-status=${item.status.name().toLowerCase()}">
                         <div class="card-img-wrap">
                             <img th:if="${item.imageUrl != null}"
                                  th:src="${item.imageUrl}"
@@ -78,11 +78,16 @@
                                 <span th:text="${'R$ ' + #numbers.formatDecimal(penultimosPorItem[item.id], 1, 'POINT', 2, 'COMMA')}"></span>
                             </p>
 
-                            <p class="card-timer">
+                            <!-- Countdown para itens ATIVOS; data de início para PENDENTES -->
+                            <p class="card-timer" th:if="${item.status.name() == 'ATIVO'}">
                                 ⏱ <span class="countdown"
                                         th:attr="data-enddate=${#temporals.format(item.endDate, 'yyyy-MM-dd''T''HH:mm:ss')}">
                                     --:--:--
                                 </span>
+                            </p>
+                            <p class="card-timer" th:if="${item.status.name() == 'PENDENTE'}"
+                               style="color:var(--gray-400);font-size:.85rem;">
+                                🗓 Início: <span th:text="${#temporals.format(item.startDate, 'dd/MM/yyyy HH:mm')}"></span>
                             </p>
 
                             <a th:href="@{/items/{id}(id=${item.id})}"
@@ -132,10 +137,9 @@
                     var status = document.getElementById('filtroStatus').value.toLowerCase();
                     document.querySelectorAll('#cardsContainer .card').forEach(function(card) {
                         var t = (card.querySelector('.card-title') || {}).textContent || '';
-                        var badgeEl = card.querySelector('.badge');
-                        var s = badgeEl ? badgeEl.textContent.trim().toLowerCase() : '';
+                        var s = (card.getAttribute('data-status') || '').toLowerCase();
                         var okTitulo = !titulo || t.toLowerCase().includes(titulo);
-                        var okStatus = !status || s.includes(status);
+                        var okStatus = !status || s === status;
                         card.style.display = (okTitulo && okStatus) ? '' : 'none';
                     });
                 }
