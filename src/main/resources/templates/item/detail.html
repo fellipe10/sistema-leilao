@@ -179,12 +179,20 @@
             <!-- Feedback WebSocket -->
             <div id="bid-messages"></div>
 
-            <!-- Formulário de lance -->
+            <!-- Feedback de lance via HTTP (flash attributes) -->
+            <div th:if="${bidSucesso}" class="alert alert-success" th:text="${bidSucesso}"
+                 style="margin-bottom:.8rem;"></div>
+            <div th:if="${bidErro}"   class="alert alert-danger"  th:text="${bidErro}"
+                 style="margin-bottom:.8rem;"></div>
+
+            <!-- Formulário de lance — submete via HTTP; JS intercepta pra WebSocket quando disponível -->
             <div class="bid-form"
                  th:if="${item.status.name() == 'ATIVO'}"
                  sec:authorize="isAuthenticated()">
                 <h3>💰 Dar um Lance</h3>
-                <form id="bid-form">
+                <form id="bid-form"
+                      th:action="@{/items/{id}/bid(id=${item.id})}"
+                      method="post">
                     <div class="bid-form-row">
                         <input type="number" id="bid-amount" name="amount"
                                step="0.01" min="0.01" placeholder="Valor do lance (R$)" required/>

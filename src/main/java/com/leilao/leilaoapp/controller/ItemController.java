@@ -1,21 +1,25 @@
 package com.leilao.leilaoapp.controller;
 
+import com.leilao.leilaoapp.dto.BidMessageDTO;
 import com.leilao.leilaoapp.entity.Item;
 import com.leilao.leilaoapp.entity.Lances;
 import com.leilao.leilaoapp.entity.User;
+import com.leilao.leilaoapp.exception.LancesException;
 import com.leilao.leilaoapp.repository.LancesRepository;
 import com.leilao.leilaoapp.repository.PagamentoRepository;
+import com.leilao.leilaoapp.service.BidService;
 import com.leilao.leilaoapp.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
@@ -24,6 +28,8 @@ import java.util.List;
 public class ItemController {
 
     private final ItemService itemService;
+    private final BidService bidService;
+    private final SimpMessagingTemplate messagingTemplate;
     private final LancesRepository lancesRepository;
     private final PagamentoRepository pagamentoRepository;
 
@@ -55,5 +61,35 @@ public class ItemController {
         model.addAttribute("currentUser", currentUser);
 
         return "item/detail";
+    }
+
+    /**
+     * Fallback HTTP para dar lance — garante funcionamento em mobile
+     * e em qualquer navegador mesmo sem WebSocket.
+     */
+    @PostMapping("/{id}/bid")
+    public String placeBid(@PathVariable Long id,
+                           @RequestParam BigDecimal amount,
+                           @AuthenticationPrincipal User currentUser,
+                           RedirectAttributes ra) {
+        if (currentUser == null) {
+            ra.addFlashAttribute("bidErro", "Você precisa estar logado para dar um lance.");
+            return "redirect:/items/" + id;
+        }
+
+        try {
+            BidMessageDTO msg = new BidMessageDTO(id, amount);
+            var response = bidService.placeBid(msg, currentUser.getEmail());
+
+            // Notifica os outros via WebSocket (atualiza tela de quem está assistindo)
+            messagingTemplate.convertAndSend("/topic/auction/" + id, response);
+
+            ra.addFlashAttribute("bidSucesso",
+                    "Lance de R$ " + amount.toPlainString().replace(".", ",") + " registrado!");
+        } catch (LancesException e) {
+            ra.addFlashAttribute("bidErro", e.getMessage());
+        }
+
+        return "redirect:/items/" + id;
     }
 }

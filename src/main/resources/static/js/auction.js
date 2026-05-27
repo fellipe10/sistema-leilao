@@ -118,6 +118,7 @@
         stompClient.debug = null;
 
         stompClient.connect({}, function () {
+            wsConnected = true;
             // Inscrever no tópico do leilão apenas se estiver ATIVO
             if (IS_ACTIVE) {
                 stompClient.subscribe('/topic/auction/' + ITEM_ID, function (frame) {
@@ -125,7 +126,8 @@
                 });
             }
         }, function (error) {
-            console.warn('WebSocket desconectado:', error);
+            wsConnected = false;
+            console.warn('WebSocket desconectado — usando modo HTTP:', error);
         });
 
         return stompClient;
@@ -153,10 +155,20 @@
     }
 
     // ── Interceptar submit do formulário ─────────────────────────
+    // Se o WebSocket estiver conectado usa-o (experiência tempo real).
+    // Caso contrário, deixa o form submeter normalmente via HTTP POST
+    // (funciona sempre, inclusive via ngrok / celular / conexões restritas).
+    var wsConnected = false;
+
     function setupBidForm(stompClient) {
         if (!bidForm) return;
 
         bidForm.addEventListener('submit', function (e) {
+            if (!wsConnected) {
+                // Fallback: deixa o form submeter normalmente via HTTP
+                return;
+            }
+
             e.preventDefault();
 
             var raw = bidAmountInput ? bidAmountInput.value.trim() : '';
